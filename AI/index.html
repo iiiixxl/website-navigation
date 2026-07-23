@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 提问模板</title>
+  <style>
+    :root {
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --accent: #0ea5e9;
+      --accent-soft: rgba(14, 165, 233, 0.12);
+      --success: #10b981;
+      --radius: 12px;
+      --shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+      --sidebar-w: 280px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(165deg, #ffffff 0%, #f0f9ff 40%, #f0fdf4 100%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 55% at 10% 5%, rgba(186, 230, 253, 0.55), transparent 55%),
+        radial-gradient(ellipse 60% 50% at 90% 10%, rgba(199, 210, 254, 0.45), transparent 50%),
+        radial-gradient(ellipse 55% 45% at 75% 90%, rgba(167, 243, 208, 0.4), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 5% 80%, rgba(254, 205, 211, 0.35), transparent 45%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(148, 163, 184, 0.18) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, black 15%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1rem 1.25rem 1.25rem;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-shrink: 0;
+    }
+
+    .topbar h1 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      background: linear-gradient(120deg, #0f172a 20%, #0369a1 55%, #059669);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .topbar-link {
+      font-size: 0.85rem;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 0.35rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .topbar-link:hover {
+      border-color: #7dd3fc;
+      background: var(--accent-soft);
+    }
+
+    .layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      gap: 1rem;
+      min-height: 0;
+    }
+
+    .sidebar {
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      overflow: auto;
+      padding: 0.75rem;
+    }
+
+    .search-box {
+      margin-bottom: 0.75rem;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 0.55rem 0.75rem 0.55rem 2.1rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 1.156a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/%3E%3C/svg%3E") no-repeat 0.7rem center;
+      color: var(--text);
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .search-box input:focus {
+      border-color: #7dd3fc;
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .cat {
+      margin-bottom: 0.5rem;
+    }
+
+    .cat-title {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      width: 100%;
+      padding: 0.45rem 0.5rem;
+      border: none;
+      background: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--cat-accent, #6366f1);
+      cursor: pointer;
+      text-align: left;
+      border-radius: 8px;
+    }
+
+    .cat-title:hover {
+      background: rgba(15, 23, 42, 0.04);
+    }
+
+    .cat-title::before {
+      content: "";
+      width: 3px;
+      height: 0.9rem;
+      border-radius: 3px;
+      background: var(--cat-accent, #6366f1);
+      flex-shrink: 0;
+    }
+
+    .cat-title-text {
+      flex: 1;
+    }
+
+    .cat-toggle {
+      color: var(--text-muted);
+      transition: transform 0.2s;
+    }
+
+    .cat-toggle svg {
+      width: 0.75rem;
+      height: 0.75rem;
+      display: block;
+    }
+
+    .cat--collapsed .cat-toggle {
+      transform: rotate(-90deg);
+    }
+
+    .cat--collapsed .cat-items {
+      display: none;
+    }
+
+    .cat--0 { --cat-accent: #6366f1; }
+    .cat--1 { --cat-accent: #ec4899; }
+    .cat--2 { --cat-accent: #0891b2; }
+    .cat--3 { --cat-accent: #7c3aed; }
+    .cat--4 { --cat-accent: #d97706; }
+    .cat--5 { --cat-accent: #059669; }
+
+    .item {
+      display: block;
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      margin: 0.2rem 0;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      font-size: 0.875rem;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    .item:hover {
+      border-color: rgba(148, 163, 184, 0.45);
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    }
+
+    .item.active {
+      border-color: var(--cat-accent, var(--accent));
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.08), #fff 60%);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--cat-accent, var(--accent)) 25%, transparent);
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.9rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .panel-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .panel-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .copy-btn,
+    .save-btn {
+      padding: 0.4rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+
+    .copy-btn:hover,
+    .save-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .copy-btn.copied,
+    .save-btn.saved {
+      color: var(--success);
+      border-color: var(--success);
+    }
+
+    .save-btn {
+      background: #fff;
+      color: var(--text);
+      border-color: #cbd5e1;
+    }
+
+    .panel-body {
+      flex: 1;
+      overflow: hidden;
+      padding: 1.1rem;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .prompt-editor {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+      margin: 0;
+      padding: 1rem 1.1rem;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-family: "Cascadia Code", "Consolas", "SF Mono", monospace;
+      font-size: 0.85rem;
+      line-height: 1.65;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: auto;
+      tab-size: 4;
+      resize: none;
+      outline: none;
+    }
+
+    .prompt-editor:focus {
+      border-color: #7dd3fc;
+      box-shadow: 0 0 0 3px var(--accent-soft);
+      background: #fff;
+    }
+
+    .save-hint {
+      margin-top: 0.55rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .save-hint.dirty {
+      color: #d97706;
+    }
+
+    .empty {
+      height: 100%;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .footer-tip {
+      flex-shrink: 0;
+      margin-top: 0.75rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      opacity: 0.75;
+    }
+
+    @media (max-width: 800px) {
+      .page {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .sidebar {
+        max-height: 40vh;
+      }
+
+      .panel {
+        min-height: 50vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <h1>AI 提问模板</h1>
+      <a class="topbar-link" href="../">← 站点导航</a>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="search-box">
+          <input type="search" id="search" placeholder="搜索模板…" autocomplete="off" />
+        </div>
+        <div id="nav"></div>
+      </aside>
+
+      <section class="panel">
+        <div class="panel-header" id="panelHeader" hidden>
+          <div>
+            <div class="panel-title" id="panelTitle"></div>
+            <div class="panel-meta" id="panelMeta"></div>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="save-btn" id="saveBtn" disabled>保存</button>
+            <button type="button" class="copy-btn" id="copyBtn">复制全文</button>
+          </div>
+        </div>
+        <div class="panel-body" id="panelBody">
+          <div class="empty">从左侧选择一个模板查看内容</div>
+        </div>
+      </section>
+    </div>
+
+    <p class="footer-tip">右侧可直接改文字，点「保存」后会记在本机浏览器。换行与空格会原样保留。</p>
+  </div>
+
+  <script src="prompts.js"></script>
+  <script>
+    const nav = document.getElementById("nav");
+    const searchInput = document.getElementById("search");
+    const panelHeader = document.getElementById("panelHeader");
+    const panelTitle = document.getElementById("panelTitle");
+    const panelMeta = document.getElementById("panelMeta");
+    const panelBody = document.getElementById("panelBody");
+    const copyBtn = document.getElementById("copyBtn");
+    const saveBtn = document.getElementById("saveBtn");
+
+    const chevronDown = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>`;
+    const COLLAPSE_KEY = "ai-prompt-collapsed";
+    const SELECT_KEY = "ai-prompt-selected";
+    const CONTENT_KEY = "ai-prompt-contents";
+
+    let currentContent = "";
+    let currentKey = "";
+    let savedContent = "";
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str == null ? "" : String(str);
+      return div.innerHTML;
+    }
+
+    function escapeAttr(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;");
+    }
+
+    function getCollapsed() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem(COLLAPSE_KEY) || "[]"));
+      } catch {
+        return new Set();
+      }
+    }
+
+    function saveCollapsed(set) {
+      localStorage.setItem(COLLAPSE_KEY, JSON.stringify([...set]));
+    }
+
+    function getContentOverrides() {
+      try {
+        return JSON.parse(localStorage.getItem(CONTENT_KEY) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function saveContentOverride(key, content) {
+      const map = getContentOverrides();
+      map[key] = content;
+      localStorage.setItem(CONTENT_KEY, JSON.stringify(map));
+    }
+
+    function applyOverridesToData() {
+      const overrides = getContentOverrides();
+      const data = window.PROMPT_DATA || { categories: [] };
+      (data.categories || []).forEach((cat) => {
+        (cat.items || []).forEach((item) => {
+          const key = `${cat.title}::${item.name}`;
+          if (Object.prototype.hasOwnProperty.call(overrides, key)) {
+            item.content = overrides[key];
+          }
+        });
+      });
+    }
+
+    function resolveContent(catTitle, item) {
+      const key = `${catTitle}::${item.name}`;
+      const overrides = getContentOverrides();
+      if (Object.prototype.hasOwnProperty.call(overrides, key)) {
+        return String(overrides[key]);
+      }
+      return item.content == null ? "" : String(item.content);
+    }
+
+    function setDirty(dirty) {
+      saveBtn.disabled = !dirty;
+      const hint = panelBody.querySelector(".save-hint");
+      if (hint) {
+        hint.textContent = dirty ? "有未保存的修改" : "已保存到本机浏览器";
+        hint.classList.toggle("dirty", dirty);
+      }
+    }
+
+    function copyText(text, btn) {
+      const onSuccess = () => {
+        btn.textContent = "已复制";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = "复制全文";
+          btn.classList.remove("copied");
+        }, 1500);
+      };
+
+      const fallbackCopy = () => {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.cssText = "position:fixed;left:-9999px;top:0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try {
+          document.execCommand("copy");
+          onSuccess();
+        } catch {
+          /* ignore */
+        }
+        document.body.removeChild(ta);
+      };
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+    }
+
+    function selectItem(catTitle, item) {
+      currentKey = `${catTitle}::${item.name}`;
+      currentContent = resolveContent(catTitle, item);
+      savedContent = currentContent;
+      localStorage.setItem(SELECT_KEY, currentKey);
+
+      panelHeader.hidden = false;
+      panelTitle.textContent = item.name;
+      panelMeta.textContent = catTitle;
+      panelBody.innerHTML = `
+        <textarea class="prompt-editor" id="promptEditor" spellcheck="false">${escapeHtml(currentContent)}</textarea>
+        <p class="save-hint">已保存到本机浏览器</p>
+      `;
+
+      const editor = document.getElementById("promptEditor");
+      editor.addEventListener("input", () => {
+        currentContent = editor.value;
+        setDirty(currentContent !== savedContent);
+      });
+
+      setDirty(false);
+
+      nav.querySelectorAll(".item").forEach((el) => {
+        el.classList.toggle("active", el.dataset.key === currentKey);
+      });
+    }
+
+    function findItemByKey(key) {
+      const data = window.PROMPT_DATA || { categories: [] };
+      for (let ci = 0; ci < (data.categories || []).length; ci++) {
+        const cat = data.categories[ci];
+        for (const item of cat.items || []) {
+          if (`${cat.title}::${item.name}` === key) {
+            return { cat, item, catIndex: ci };
+          }
+        }
+      }
+      return null;
+    }
+
+    function renderNav(filter) {
+      const data = window.PROMPT_DATA || { categories: [] };
+      const q = (filter || "").trim().toLowerCase();
+      const collapsed = getCollapsed();
+      const categories = data.categories || [];
+
+      if (!categories.length) {
+        nav.innerHTML = `<div class="empty">暂无模板，请编辑 prompts.js</div>`;
+        return;
+      }
+
+      let html = "";
+      let firstMatch = null;
+
+      categories.forEach((cat, i) => {
+        const items = (cat.items || []).filter((item) => {
+          if (!q) return true;
+          const name = (item.name || "").toLowerCase();
+          const content = resolveContent(cat.title, item).toLowerCase();
+          return name.includes(q) || content.includes(q);
+        });
+
+        if (!items.length) return;
+
+        if (!firstMatch) firstMatch = { cat, item: items[0], catIndex: i };
+
+        const isCollapsed = !q && collapsed.has(cat.title);
+        html += `
+          <div class="cat cat--${i % 6}${isCollapsed ? " cat--collapsed" : ""}" data-cat="${escapeAttr(cat.title)}">
+            <button type="button" class="cat-title" aria-expanded="${isCollapsed ? "false" : "true"}">
+              <span class="cat-title-text">${escapeHtml(cat.title)}</span>
+              <span class="cat-toggle" aria-hidden="true">${chevronDown}</span>
+            </button>
+            <div class="cat-items">
+              ${items
+                .map(
+                  (item) => `
+                <button type="button" class="item${currentKey === `${cat.title}::${item.name}` ? " active" : ""}"
+                  data-key="${escapeAttr(`${cat.title}::${item.name}`)}">
+                  ${escapeHtml(item.name)}
+                </button>`
+                )
+                .join("")}
+            </div>
+          </div>
+        `;
+      });
+
+      nav.innerHTML = html || `<div class="empty">没有匹配的模板</div>`;
+
+      nav.querySelectorAll(".cat-title").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const catEl = btn.closest(".cat");
+          const title = catEl.dataset.cat;
+          const next = !catEl.classList.contains("cat--collapsed");
+          catEl.classList.toggle("cat--collapsed", next);
+          btn.setAttribute("aria-expanded", next ? "false" : "true");
+          const set = getCollapsed();
+          if (next) set.add(title);
+          else set.delete(title);
+          saveCollapsed(set);
+        });
+      });
+
+      nav.querySelectorAll(".item").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const found = findItemByKey(btn.dataset.key);
+          if (found) selectItem(found.cat.title, found.item);
+        });
+      });
+
+      if (q && firstMatch && currentKey !== `${firstMatch.cat.title}::${firstMatch.item.name}`) {
+        selectItem(firstMatch.cat.title, firstMatch.item);
+      }
+    }
+
+    copyBtn.addEventListener("click", () => {
+      const editor = document.getElementById("promptEditor");
+      const text = editor ? editor.value : currentContent;
+      if (text !== "") copyText(text, copyBtn);
+    });
+
+    saveBtn.addEventListener("click", () => {
+      if (!currentKey || saveBtn.disabled) return;
+      const editor = document.getElementById("promptEditor");
+      const text = editor ? editor.value : currentContent;
+      currentContent = text;
+      savedContent = text;
+      saveContentOverride(currentKey, text);
+
+      const found = findItemByKey(currentKey);
+      if (found) found.item.content = text;
+
+      saveBtn.textContent = "已保存";
+      saveBtn.classList.add("saved");
+      setDirty(false);
+      setTimeout(() => {
+        saveBtn.textContent = "保存";
+        saveBtn.classList.remove("saved");
+      }, 1200);
+    });
+
+    searchInput.addEventListener("input", (e) => renderNav(e.target.value));
+
+    applyOverridesToData();
+    renderNav("");
+
+    const saved = localStorage.getItem(SELECT_KEY);
+    const restored = saved ? findItemByKey(saved) : null;
+    if (restored) {
+      selectItem(restored.cat.title, restored.item);
+    } else {
+      const data = window.PROMPT_DATA || { categories: [] };
+      const firstCat = (data.categories || [])[0];
+      const firstItem = firstCat && (firstCat.items || [])[0];
+      if (firstCat && firstItem) selectItem(firstCat.title, firstItem);
+    }
+  </script>
+</body>
+</html>
