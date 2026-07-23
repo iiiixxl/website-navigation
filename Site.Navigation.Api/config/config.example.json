@@ -1,0 +1,22 @@
+{
+  "database": {
+    "dsn": "sa:126@tcp(115.190.243.37:3306)/site.navigation?charset=utf8mb4&parseTime=True&loc=Local",
+    "max_open_conns": 25,
+    "max_idle_conns": 5
+  },
+  "jwt": {
+    "secret": "change-me-in-production",
+    "expire_hours": 24
+  },
+  "redis": {
+    "enabled": true,
+    "address": "119.45.180.81:6379",
+    "password": "sa@126",
+    "db": 0,
+    "pool_size": 10,
+    "min_idle_conns": 5
+  },
+  "server": {
+    "port": "18080"
+  }
+}
